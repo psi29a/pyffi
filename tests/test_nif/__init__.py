@@ -8,6 +8,7 @@ niftoaster = imp.load_module(
     "niftoaster",
     *imp.find_module("niftoaster", [os.path.join("scripts", "nif")]))
 
+
 def call_niftoaster(*args):
     oldargv = sys.argv[:]
     # -j1 to disable multithreading (makes various things impossible)

@@ -337,33 +337,29 @@ end
 #
 # ***** END LICENSE BLOCK *****
 
-from itertools import repeat, chain
-import logging
-import math # math.pi
+import math  # math.pi
 import os
 import re
 import struct
-import sys
 import warnings
 import weakref
+from itertools import repeat, chain
 
 import pyffi.formats.bsa
 import pyffi.formats.dds
-import pyffi.object_models.common
 import pyffi.object_models
-from pyffi.object_models.xml import FileFormat
+import pyffi.object_models.common
 import pyffi.utils.inertia
-from pyffi.utils.mathutils import * # XXX todo get rid of from XXX import *
 import pyffi.utils.mopp
+import pyffi.utils.quickhull
 import pyffi.utils.tristrip
 import pyffi.utils.vertex_cache
-import pyffi.utils.quickhull
-# XXX convert the following to absolute imports
 from pyffi.object_models.editable import EditableBoolComboBox
-from pyffi.utils.graph import EdgeFilter
+from pyffi.object_models.xml import FileFormat
 from pyffi.object_models.xml.basic import BasicBase
 from pyffi.object_models.xml.struct_ import StructBase
-
+from pyffi.utils.graph import EdgeFilter
+from pyffi.utils.mathutils import * # XXX todo get rid of from XXX import *
 
 
 class NifFormat(FileFormat):

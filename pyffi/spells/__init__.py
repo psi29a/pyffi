@@ -135,25 +135,23 @@ the file format class of the files it can toast.
 # ***** END LICENSE BLOCK *****
 # --------------------------------------------------------------------------
 
+import concurrent.futures  # ProcessPoolExecutor
+import gc
+import logging  # Logger
+import multiprocessing  # current_process, cpu_count
+import optparse
+import os  # remove
+import os.path  # getsize, split, join
+import re  # for regex parsing (--skip, --only)
+import shlex  # shlex.split for parsing option lists in ini files
+import subprocess
+import tempfile
 from configparser import ConfigParser
 from copy import deepcopy
-from io import StringIO
-import gc
 
-import logging # Logger
-import concurrent.futures # ProcessPoolExecutor
-import multiprocessing # current_process, cpu_count
-import optparse
-import os # remove
-import os.path # getsize, split, join
-import re # for regex parsing (--skip, --only)
-import shlex # shlex.split for parsing option lists in ini files
-import subprocess
-import sys # sys.stdout
-import tempfile
+import pyffi  # for pyffi.__version__
+import pyffi.object_models  # pyffi.object_models.FileFormat
 
-import pyffi # for pyffi.__version__
-import pyffi.object_models # pyffi.object_models.FileFormat
 
 class Spell(object):
     """Spell base class. A spell takes a data file and then does something
@@ -403,6 +401,7 @@ class Spell(object):
             self.reports = []
         self.reports.append(report)
 
+
 class SpellGroupBase(Spell):
     """Base class for grouping spells. This implements all the spell grouping
     functions that fall outside of the actual recursing (:meth:`__init__`,
@@ -455,8 +454,10 @@ class SpellGroupBase(Spell):
         for spellclass in cls.ACTIVESPELLCLASSES:
             spellclass.toastexit(toaster)
 
+
 class SpellGroupSeriesBase(SpellGroupBase):
     """Base class for running spells in series."""
+
     def recurse(self, branch=None):
         """Recurse spells in series."""
         for spell in self.spells:
@@ -484,10 +485,12 @@ class SpellGroupSeriesBase(SpellGroupBase):
     def changed(self):
         return any(spell.changed for spell in self.spells)
 
+
 class SpellGroupParallelBase(SpellGroupBase):
     """Base class for running spells in parallel (that is, with only
     a single recursion in the tree).
     """
+
     def branchinspect(self, branch):
         """Inspect spells with :meth:`Spell.branchinspect` (not all checks are
         executed, only keeps going until a spell inspection returns ``True``).
@@ -501,7 +504,7 @@ class SpellGroupParallelBase(SpellGroupBase):
 
     def branchexit(self, branch):
         for spell in self.spells:
-             spell.branchexit(branch)
+            spell.branchexit(branch)
 
     def dataentry(self):
         """Look into every spell with :meth:`Spell.dataentry`."""
@@ -518,6 +521,7 @@ class SpellGroupParallelBase(SpellGroupBase):
     def changed(self):
         return any(spell.changed for spell in self.spells)
 
+
 def SpellGroupSeries(*args):
     """Class factory for grouping spells in series."""
     return type("".join(spellclass.__name__ for spellclass in args),
@@ -525,8 +529,9 @@ def SpellGroupSeries(*args):
                 {"SPELLCLASSES": args,
                  "SPELLNAME":
                      " | ".join(spellclass.SPELLNAME for spellclass in args),
-                 "READONLY": 
-                      all(spellclass.READONLY for spellclass in args)})
+                 "READONLY":
+                     all(spellclass.READONLY for spellclass in args)})
+
 
 def SpellGroupParallel(*args):
     """Class factory for grouping spells in parallel."""
@@ -535,8 +540,9 @@ def SpellGroupParallel(*args):
                 {"SPELLCLASSES": args,
                  "SPELLNAME":
                      " & ".join(spellclass.SPELLNAME for spellclass in args),
-                 "READONLY": 
-                      all(spellclass.READONLY for spellclass in args)})
+                 "READONLY":
+                     all(spellclass.READONLY for spellclass in args)})
+
 
 class SpellApplyPatch(Spell):
     """A spell for applying a patch on files."""
@@ -599,6 +605,7 @@ class fake_logger:
     def setLevel(cls, level):
         cls.level = level
 
+
 def _toaster_job(args):
     """For multiprocessing. This function creates a new toaster, with the
     given options and spells, and calls the toaster on filename.
@@ -608,6 +615,7 @@ def _toaster_job(args):
         """Simple logger which works well along with multiprocessing
         on all platforms.
         """
+
         @classmethod
         def _log(cls, level, level_str, msg):
             # do not actually log, just print
@@ -632,6 +640,7 @@ def _toaster_job(args):
     # toast exit code
     toaster.spellclass.toastexit(toaster)
 
+
 # CPU_COUNT is used for default number of jobs
 if multiprocessing:
     try:
@@ -640,6 +649,7 @@ if multiprocessing:
         CPU_COUNT = 1
 else:
     CPU_COUNT = 1
+
 
 class Toaster(object):
     """Toaster base class. Toasters run spells on large quantities of files.
@@ -753,10 +763,10 @@ class Toaster(object):
         if self.options["createpatch"] and self.options["applypatch"]:
             raise ValueError(
                 "options --diff and --patch are mutually exclusive")
-        if self.options["diffcmd"] and not(self.options["createpatch"]):
+        if self.options["diffcmd"] and not (self.options["createpatch"]):
             raise ValueError(
                 "option --diff-cmd can only be used with --diff")
-        if self.options["patchcmd"] and not(self.options["applypatch"]):
+        if self.options["patchcmd"] and not (self.options["applypatch"]):
             raise ValueError(
                 "option --patch-cmd can only be used with --patch")
         # multiprocessing available?
@@ -831,7 +841,7 @@ class Toaster(object):
         message, but if the message argument is ``None``, then no message is
         printed."""
         self.indent -= 1
-        if not(message is None):
+        if not (message is None):
             self.msg(message)
 
     def is_admissible_branch_class(self, branchtype):
@@ -890,7 +900,7 @@ class Toaster(object):
         >>> toaster.is_admissible_branch_class(NifFormat.NiAlphaProperty)
         True
         """
-        #print("checking %s" % branchtype.__name__) # debug
+        # print("checking %s" % branchtype.__name__) # debug
         # check that block is not in exclude...
         if not issubclass(branchtype, self.exclude_types):
             # not excluded!
@@ -903,7 +913,7 @@ class Toaster(object):
                 # included as well! the block is admissible
                 return True
         # not admissible
-        #print("not admissible") # debug
+        # print("not admissible") # debug
         return False
 
     @staticmethod
@@ -1172,7 +1182,7 @@ class Toaster(object):
             type="string",
             metavar="SUFFIX",
             help="append SUFFIX to file name when saving modification"
-            " instead of overwriting the original")
+                 " instead of overwriting the original")
         parser.add_option(
             "-v", "--verbose", dest="verbose",
             type="int",
@@ -1235,11 +1245,11 @@ class Toaster(object):
                 return
             if not args:
                 # no args: error if no top or no spells
-                if not(self.top and self.spellnames):
+                if not (self.top and self.spellnames):
                     parser.error(errormessage_numargs)
             elif len(args) == 1:
                 # single argument is top, error if no spells
-                if not(self.spellnames):
+                if not (self.spellnames):
                     parser.error(errormessage_numargs)
                 self.top = args[-1]
             else:
@@ -1318,7 +1328,7 @@ class Toaster(object):
         # is much more verbose by default
 
         pause = self.options.get("pause", False)
-        
+
         # do not ask for confirmation (!= cli default)
         interactive = self.options.get("interactive", False)
 
@@ -1356,7 +1366,7 @@ This script will modify your files, in particular if something goes wrong it
 may destroy them. Make a backup of your files before running this script.
 """)
             if not input(
-                "Are you sure that you want to proceed? [n/y] ") in ("y", "Y"):
+                    "Are you sure that you want to proceed? [n/y] ") in ("y", "Y"):
                 self.logger.info("Script aborted by user.")
                 if pause:
                     input("Press enter...")
@@ -1366,7 +1376,7 @@ may destroy them. Make a backup of your files before running this script.
         # inspect the file but do not yet read in full
         if jobs == 1:
             for stream in self.FILEFORMAT.walk(
-                top, mode='rb' if self.spellclass.READONLY else 'r+b'):
+                    top, mode='rb' if self.spellclass.READONLY else 'r+b'):
                 self._toast(stream)
                 if self.options["gccollect"]:
                     # force free memory (helps when parsing many files)
@@ -1431,7 +1441,7 @@ may destroy them. Make a backup of your files before running this script.
         # check if file exists
         if self.options["resume"]:
             if self.spellclass.get_toast_stream(
-                self, stream.name, test_exists=True):
+                    self, stream.name, test_exists=True):
                 self.msg("=== %s (already done) ===" % stream.name)
                 return
 
@@ -1444,12 +1454,12 @@ may destroy them. Make a backup of your files before running this script.
 
             # create spell instance
             spell = self.spellclass(toaster=self, data=data, stream=stream)
-            
+
             # inspect the spell instance
             if spell._datainspect() and spell.datainspect():
                 # read the full file
                 data.read(stream)
-                
+
                 # cast the spell on the data tree
                 spell.recurse()
 
@@ -1510,7 +1520,7 @@ may destroy them. Make a backup of your files before running this script.
             head,
             self.options["prefix"] + root + self.options["suffix"],
             ext,
-            )
+        )
 
     def get_toast_stream(self, filename, test_exists=False):
         """Calls :meth:`get_toast_head_root_ext(filename)`
@@ -1525,7 +1535,7 @@ may destroy them. Make a backup of your files before running this script.
         """
         if self.options["dryrun"]:
             if test_exists:
-                return False # temporary file never exists
+                return False  # temporary file never exists
             else:
                 self.msg("writing to temporary file")
                 return tempfile.TemporaryFile()
@@ -1538,7 +1548,7 @@ may destroy them. Make a backup of your files before running this script.
             else:
                 self.logger.info("creating destination path %s" % head)
                 os.makedirs(head)
-        filename =  os.path.join(head, root + ext)
+        filename = os.path.join(head, root + ext)
         if test_exists:
             return os.path.exists(filename)
         else:
@@ -1561,7 +1571,7 @@ may destroy them. Make a backup of your files before running this script.
         try:
             try:
                 data.write(outstream)
-            except: # not just Exception, also CTRL-C
+            except:  # not just Exception, also CTRL-C
                 self.msg("write failed!!!")
                 if stream is outstream:
                     self.msg("attempting to restore original file...")
@@ -1588,13 +1598,12 @@ may destroy them. Make a backup of your files before running this script.
         if not diffcmd:
             raise ValueError("must specify a diff command")
 
-
         # create a temporary file that won't get deleted when closed
         self.options["suffix"] = ".tmp"
         newfile = self.spellclass.get_toast_stream(self, stream.name)
         try:
             data.write(newfile)
-        except: # not just Exception, also CTRL-C
+        except:  # not just Exception, also CTRL-C
             self.msg("write failed!!!")
             raise
         # use external diff command
@@ -1609,6 +1618,8 @@ may destroy them. Make a backup of your files before running this script.
         # delete temporary file
         os.remove(newfilename)
 
+
 if __name__ == '__main__':
     import doctest
+
     doctest.testmod()

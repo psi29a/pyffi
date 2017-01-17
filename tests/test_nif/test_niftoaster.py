@@ -3,31 +3,34 @@
 import os
 import os.path
 import nose.tools
-# if nose refuses to show the diffs, uncomment the next line
-#nose.tools.assert_equal.im_self.maxDiff = None
-
 from tests.test_nif import call_niftoaster
 
-@nose.tools.raises(SystemExit) # --help uses sys.exit()
+
+@nose.tools.raises(SystemExit)  # --help uses sys.exit()
 def test_help():
     call_niftoaster("--help")
+
 
 def test_examples():
     call_niftoaster("--examples")
 
+
 def test_spells():
     call_niftoaster("--spells")
+
 
 @nose.tools.raises(AttributeError)
 def test_raise():
     toaster = call_niftoaster(
         "--raise", "check_readwrite", "tests/nif/invalid.nif")
 
+
 def test_no_raise():
     toaster = call_niftoaster(
         "check_readwrite", "tests/nif/invalid.nif")
     nose.tools.assert_equal(
         sorted(toaster.files_failed), ["tests/nif/invalid.nif"])
+
 
 def test_check_readwrite():
     for filename in ["nds.nif", "neosteam.nif", "test.nif"]:
@@ -37,6 +40,7 @@ def test_check_readwrite():
         nose.tools.assert_equal(
             sorted(toaster.files_done), [fullfilename])
 
+
 def test_check_skip_only():
     toaster = call_niftoaster(
         *("--skip texture --skip skin --only fix_t --only center check_nop tests/nif/".split()))
@@ -44,7 +48,7 @@ def test_check_skip_only():
         sorted(toaster.files_done), [
             'tests/nif/test_centerradius.nif',
             'tests/nif/test_fix_tangentspace.nif',
-            ])
+        ])
     nose.tools.assert_equal(
         sorted(toaster.files_skipped), [
             'tests/nif/invalid.nif',
@@ -83,8 +87,9 @@ def test_check_skip_only():
             'tests/nif/test_opt_zeroscale.nif',
             'tests/nif/test_skincenterradius.nif',
             'tests/nif/test_vertexcolor.nif',
-            ])
+        ])
     nose.tools.assert_equal(toaster.files_failed, set([]))
+
 
 def test_prefix_suffix():
     call_niftoaster(
@@ -92,6 +97,7 @@ def test_prefix_suffix():
     nose.tools.assert_equal(
         os.path.exists("tests/nif/pre_test_suf.nif"), True)
     os.remove("tests/nif/pre_test_suf.nif")
+
 
 def test_check_bhkbodycenter():
     testfile = "tests/nif/test_fix_detachhavoktristripsdata.nif"
@@ -103,6 +109,7 @@ def test_check_bhkbodycenter():
     nose.tools.assert_almost_equal(calc[1], 18.46527444)
     nose.tools.assert_almost_equal(calc[2], 6.88672184)
     nose.tools.assert_almost_equal(calc[3], 0.0)
+
 
 def test_check_centerradius():
     testfile = "tests/nif/test_centerradius.nif"
@@ -116,6 +123,7 @@ def test_check_centerradius():
     nose.tools.assert_equal(orig_center, (-1.0, 0.0, 0.0))
     nose.tools.assert_almost_equal(orig_radius, 10.0)
     nose.tools.assert_almost_equal(calc_radius, 17.32050890)
+
 
 """
 
